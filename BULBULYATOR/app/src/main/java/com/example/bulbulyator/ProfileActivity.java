@@ -2,7 +2,6 @@ package com.example.bulbulyator;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
@@ -10,7 +9,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
-import com.bumptech.glide.Glide;
 import com.google.android.material.imageview.ShapeableImageView;
 
 public class ProfileActivity extends BaseActivity {
@@ -85,13 +83,12 @@ public class ProfileActivity extends BaseActivity {
                         userBioText.setVisibility(View.GONE);
                     }
                     if (user.avatarUri != null && !user.avatarUri.isEmpty()) {
-                        Glide.with(this).load(Uri.parse(user.avatarUri))
-                                .circleCrop().placeholder(R.drawable.ic_launcher_foreground).into(profileAvatar);
+                        ImageUtils.load(this, user.avatarUri, profileAvatar);
                     } else {
                         profileAvatar.setImageResource(R.drawable.ic_launcher_foreground);
                     }
                     if (user.bannerUri != null && !user.bannerUri.isEmpty()) {
-                        Glide.with(this).load(Uri.parse(user.bannerUri)).centerCrop().into(profileBanner);
+                        ImageUtils.load(this, user.bannerUri, profileBanner);
                     }
                 }
                 favoritesBadge.setText(String.valueOf(favCount));

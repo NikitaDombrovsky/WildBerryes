@@ -101,6 +101,28 @@ public class SupabaseClient {
     }
 
     /**
+     * Загружает байты в Supabase Storage (без Context, для seed/background).
+     */
+    public static String uploadBytes(String bucket, String path, byte[] bytes, String mime) {
+        try {
+            Request req = new Request.Builder()
+                    .url(STORAGE_URL + bucket + "/" + path)
+                    .addHeader("apikey", KEY)
+                    .addHeader("Authorization", "Bearer " + KEY)
+                    .addHeader("x-upsert", "true")
+                    .put(RequestBody.create(bytes, MediaType.get(mime)))
+                    .build();
+            try (Response resp = client.newCall(req).execute()) {
+                if (!resp.isSuccessful()) { Log.e(TAG, "uploadBytes " + resp.code()); return null; }
+                return BASE + "/storage/v1/object/public/" + bucket + "/" + path;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "uploadBytes error", e);
+            return null;
+        }
+    }
+
+    /**
      * Загружает файл в Supabase Storage.
      * @param bucket  имя бакета (например "avatars")
      * @param path    путь внутри бакета (например "42/avatar.jpg")

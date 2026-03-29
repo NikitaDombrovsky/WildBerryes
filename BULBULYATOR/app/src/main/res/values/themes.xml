@@ -1,6 +1,12 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <style name="Base.Theme.BULBULYATOR" parent="Theme.Material3.DayNight.NoActionBar" />
+    <style name="Base.Theme.BULBULYATOR" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorSurface">#1E1E1E</item>
+        <item name="colorSurfaceVariant">#2A2A2A</item>
+        <item name="colorOnSurface">#FFFFFF</item>
+        <item name="colorOnSurfaceVariant">#AAAAAA</item>
+        <item name="android:windowBackground">#121212</item>
+    </style>
     <style name="Theme.BULBULYATOR" parent="Base.Theme.BULBULYATOR" />
 
     <!-- Чёрно-золотая тема -->

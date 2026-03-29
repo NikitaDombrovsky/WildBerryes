@@ -137,7 +137,11 @@ public class EditProfileActivity extends BaseActivity {
                         "avatars", userId + "/avatar." + ext,
                         this, selectedAvatarUri, mime);
                 if (url != null) user.avatarUri = url;
-                else user.avatarUri = selectedAvatarUri.toString(); // fallback
+                else {
+                    runOnUiThread(() -> Toast.makeText(this, "Ошибка загрузки аватара", Toast.LENGTH_SHORT).show());
+                    saveButton.post(() -> { saveButton.setEnabled(true); saveButton.setText("Сохранить"); });
+                    return;
+                }
             }
 
             if (selectedBannerUri != null) {
@@ -147,7 +151,11 @@ public class EditProfileActivity extends BaseActivity {
                         "avatars", userId + "/banner." + ext,
                         this, selectedBannerUri, mime);
                 if (url != null) user.bannerUri = url;
-                else user.bannerUri = selectedBannerUri.toString(); // fallback
+                else {
+                    runOnUiThread(() -> Toast.makeText(this, "Ошибка загрузки баннера", Toast.LENGTH_SHORT).show());
+                    saveButton.post(() -> { saveButton.setEnabled(true); saveButton.setText("Сохранить"); });
+                    return;
+                }
             }
 
             db.userDao().update(user);

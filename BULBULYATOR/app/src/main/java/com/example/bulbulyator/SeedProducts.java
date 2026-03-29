@@ -2,132 +2,138 @@ package com.example.bulbulyator;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Log;
+
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 public class SeedProducts {
 
     private static final String PREFS = "SeedPrefs";
-    private static final String KEY   = "seeded_v5";
+    private static final String KEY   = "seeded_v10";
+    private static final String TAG   = "SeedProducts";
+
+    // {name, description, price, unsplash_url, category}
+    private static final Object[][] ITEMS = {
+        // Электроника
+        {"Айфон 15 Pro", "Смартфон Apple с чипом A17 Pro, 256 ГБ", 99990,
+            "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600&q=80", "Электроника"},
+        {"Samsung Galaxy S24", "Флагманский Android-смартфон, 128 ГБ", 79990,
+            "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=600&q=80", "Электроника"},
+        {"Ноутбук ASUS ROG", "Игровой ноутбук, RTX 4060, 16 ГБ RAM", 89990,
+            "https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=600&q=80", "Электроника"},
+        {"Наушники Sony WH-1000XM5", "Беспроводные с шумоподавлением", 24990,
+            "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80", "Электроника"},
+        {"iPad Pro 12.9", "Планшет Apple M2, 256 ГБ, Wi-Fi", 74990,
+            "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=600&q=80", "Электроника"},
+        {"Умные часы Apple Watch 9", "GPS, датчик ЧСС, 45 мм", 34990,
+            "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=600&q=80", "Электроника"},
+        // Автотовары
+        {"Видеорегистратор 4K", "Широкоугольная камера с ночным режимом", 4990,
+            "https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=600&q=80", "Автотовары"},
+        {"Автомобильный пылесос", "Беспроводной, 120 Вт, с насадками", 2490,
+            "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80", "Автотовары"},
+        {"Зимние шины R17", "Комплект 4 шт, Michelin X-Ice", 24990,
+            "https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=600&q=80", "Автотовары"},
+        {"Автомобильный компрессор", "Цифровой, 150 PSI, с LED-фонарём", 3490,
+            "https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=600&q=80", "Автотовары"},
+        // Одежда
+        {"Кроссовки Nike Air Max", "Мужские, размер 42, белые", 8990,
+            "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&q=80", "Одежда"},
+        {"Куртка зимняя", "Пуховик мужской, размер L, чёрный", 12990,
+            "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600&q=80", "Одежда"},
+        {"Джинсы Levi's 501", "Классические прямые, размер 32/32", 5990,
+            "https://images.unsplash.com/photo-1542272604-787c3835535d?w=600&q=80", "Одежда"},
+        {"Платье летнее", "Женское, цветочный принт, размер M", 3490,
+            "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600&q=80", "Одежда"},
+        // Дом и сад
+        {"Кофемашина DeLonghi", "Автоматическая, с капучинатором", 39990,
+            "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&q=80", "Дом и сад"},
+        {"Робот-пылесос", "Умный, с картой помещения, Wi-Fi", 29990,
+            "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80", "Дом и сад"},
+        {"Диван угловой", "Раскладной, ткань, серый, 250x150 см", 49990,
+            "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80", "Дом и сад"},
+        {"Настольная лампа LED", "Диммируемая, 3 режима, USB-зарядка", 1990,
+            "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600&q=80", "Дом и сад"},
+        // Спорт
+        {"Велосипед горный", "21 скорость, алюминиевая рама, 26\"", 19990,
+            "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&q=80", "Спорт"},
+        {"Гантели разборные", "Комплект 2x20 кг, с подставкой", 7990,
+            "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&q=80", "Спорт"},
+    };
 
     public static void seedIfNeeded(Context ctx) {
         SharedPreferences prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         if (prefs.getBoolean(KEY, false)) return;
 
-        SupabaseProductDao dao = SupabaseDb.getInstance().productDao();
-        dao.deleteBySeller(0);
+        new Thread(() -> {
+            try {
+                SupabaseProductDao dao = SupabaseDb.getInstance().productDao();
+                dao.deleteBySeller(0);
 
-        Object[][] items = {
-            {"iPhone 15 Pro",          "Смартфон Apple с чипом A17 Pro,",        99990, "https://picsum.photos/seed/iphone15/400/300",     "Электроника"},
-            {"Samsung Galaxy S24",     "Флагманский Android-смартфон, 128 ГБ",           79990, "https://picsum.photos/seed/samsung24/400/300",    "Электроника"},
-            {"Ноутбук ASUS ROG",       "Игровой ноутбук, RTX 4060, 16 ГБ RAM",           89990, "https://picsum.photos/seed/asusrog/400/300",      "Электроника"},
+                for (Object[] item : ITEMS) {
+                    String name        = (String) item[0];
+                    String description = (String) item[1];
+                    double price       = ((Number) item[2]).doubleValue();
+                    String imageSource = (String) item[3];
+                    String category    = (String) item[4];
 
-            // Автотовары
-            {"Видеорегистратор 4K",    "Широкоугольная камера с ночным режимом",          4990, "https://picsum.photos/seed/dashcam4k/400/300",    "Автотовары"},
-            {"Автомобильный пылесос",  "Беспроводной, 120 Вт, с насадками",               2490, "https://picsum.photos/seed/carvacuum/400/300",    "Автотовары"},
-            {"Зимние шины R17",        "Комплект 4 шт, Michelin X-Ice",                  24990, "https://picsum.photos/seed/wintertyres/400/300",  "Автотовары"},
+                    // Скачиваем картинку и загружаем в Supabase Storage
+                    String storedUrl = uploadImageToStorage(name, imageSource);
+                    // Если загрузка не удалась — используем оригинальный URL
+                    if (storedUrl == null) storedUrl = imageSource;
 
-            // Услуги
-            {"Ремонт телефонов",       "Замена экрана, батареи, разъёмов",                 990, "https://picsum.photos/seed/phonerepair/400/300",  "Услуги"},
-            {"Уборка квартиры",        "Генеральная уборка, 3 часа, все материалы",       2500, "https://picsum.photos/seed/homeclean/400/300",    "Услуги"},
-            {"Репетитор по математике","Подготовка к ЕГЭ, онлайн, 1 час",                1200, "https://picsum.photos/seed/mathtutor/400/300",    "Услуги"},
+                    Product p = new Product();
+                    p.name        = name;
+                    p.description = description;
+                    p.price       = price;
+                    p.imageUrl    = storedUrl;
+                    p.category    = category;
+                    p.sellerId    = 0;
+                    p.sellerName  = "Магазин";
+                    dao.insert(p);
 
-            // Игры
-            {"PlayStation 5",          "Игровая консоль Sony, 825 ГБ SSD",               54990, "https://picsum.photos/seed/ps5300",   "Игры"},
-            {"Xbox Series X",          "Игровая консоль Microsoft, 1 ТБ",                49990, "https://picsum.photos/seed/xboxserx/400/300",     "Игры"},
-            {"Nintendo Switch OLED",   "Портативная консоль с OLED-экраном",             34990, "https://picsum.photos/seed/switcholed/400/300",   "Игры"},
+                    Log.d(TAG, "Seeded: " + name + " -> " + storedUrl);
+                }
 
-            // Одежда
-            {"Куртка зимняя мужская",  "Пуховик, водонепроницаемый, размер M-XXL",        7990, "https://picsum.photos/seed/winterjacket/400/300", "Одежда"},
-            {"Платье летнее",          "Лёгкое хлопковое платье, разные цвета",           2490, "https://picsum.photos/seed/summerdress/400/300",  "Одежда"},
-            {"Кроссовки Nike Air Max",  "Беговые кроссовки, размеры 36-46",               8990, "https://picsum.photos/seed/nikeairmax/400/300",   "Одежда"},
+                prefs.edit().putBoolean(KEY, true).apply();
+                Log.d(TAG, "Seed complete");
+            } catch (Exception e) {
+                Log.e(TAG, "Seed error", e);
+            }
+        }).start();
+    }
 
-            // Спорт
-            {"Гантели 10 кг пара",     "Разборные, с резиновым покрытием",                3490, "https://picsum.photos/seed/dumbbells10/400/300",  "Спорт"},
-            {"Велосипед горный",       "21 скорость, алюминиевая рама, 26\"",             18990, "https://picsum.photos/seed/mtbbike/400/300",      "Спорт"},
-            {"Коврик для йоги",        "Нескользящий, 6 мм, 183×61 см",                   1490, "https://picsum.photos/seed/yogamat2/400/300",     "Спорт"},
+    /** Скачивает картинку по URL и загружает в Supabase Storage bucket "products" */
+    private static String uploadImageToStorage(String productName, String imageUrl) {
+        try {
+            // Скачиваем байты
+            HttpURLConnection conn = (HttpURLConnection) new URL(imageUrl).openConnection();
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(15000);
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+            conn.connect();
+            if (conn.getResponseCode() != 200) return null;
 
-            // Детям
-            {"Конструктор LEGO City",  "500 деталей, для детей от 6 лет",                 3990, "https://picsum.photos/seed/legocity/400/300",     "Детям"},
-            {"Самокат детский",        "Трёхколёсный, до 20 кг, складной",                2990, "https://picsum.photos/seed/kidscooter/400/300",   "Детям"},
-            {"Мягкая игрушка медведь", "Плюшевый, 50 см, гипоаллергенный",                 990, "https://picsum.photos/seed/teddybear/400/300",    "Детям"},
+            InputStream is = conn.getInputStream();
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = is.read(buf)) != -1) bos.write(buf, 0, n);
+            is.close();
+            conn.disconnect();
+            byte[] bytes = bos.toByteArray();
 
-            // Для дома
-            {"Умная колонка Яндекс",   "Яндекс Станция Мини с Алисой",                   4990, "https://picsum.photos/seed/smartspeaker/400/300", "Для дома"},
-            {"Набор постельного белья", "Сатин, 2-спальный, 4 предмета",                  3490, "https://picsum.photos/seed/bedlinen/400/300",     "Для дома"},
-            {"Светодиодная лента 5м",  "RGB, с пультом, 12В, IP65",                         890, "https://picsum.photos/seed/rgbstrip/400/300",     "Для дома"},
+            // Формируем путь в storage
+            String safeName = productName.replaceAll("[^a-zA-Z0-9а-яА-Я]", "_").toLowerCase();
+            String path = "seed/" + safeName + "_" + System.currentTimeMillis() + ".jpg";
 
-            // Красота
-            {"Фен Dyson Supersonic",   "Профессиональный, 1600 Вт",                      29990, "https://picsum.photos/seed/dysonhair/400/300",    "Красота"},
-            {"Набор кистей для макияжа","12 штук, натуральный ворс",                      1290, "https://picsum.photos/seed/makeupbrush/400/300",  "Красота"},
-            {"Крем для лица SPF50",    "Увлажняющий, с защитой от UV",                    1890, "https://picsum.photos/seed/facecream/400/300",    "Красота"},
-
-            // Здоровье
-            {"Тонометр электронный",   "Автоматический, на запястье",                     2490, "https://picsum.photos/seed/bloodpress/400/300",   "Здоровье"},
-            {"Витамины D3+K2",         "60 капсул, 2000 МЕ",                                890, "https://picsum.photos/seed/vitamind3/400/300",    "Здоровье"},
-            {"Массажёр для шеи",       "Электрический, 6 режимов, с подогревом",          3490, "https://picsum.photos/seed/neckmassage/400/300",  "Здоровье"},
-
-            // Продукты
-            {"Мёд натуральный 1 кг",   "Цветочный, фермерский, без добавок",                690, "https://picsum.photos/seed/naturalhoney/400/300", "Продукты"},
-            {"Кофе в зёрнах 1 кг",    "Арабика, обжарка средняя, Эфиопия",               1490, "https://picsum.photos/seed/arabicacoffee/400/300","Продукты"},
-            {"Набор орехов",           "500 г, миндаль, кешью, изюм",                       890, "https://picsum.photos/seed/mixednuts/400/300",    "Продукты"},
-
-            // Мебель
-            {"Диван угловой",          "Раскладной, рогожка, серый",                     34990, "https://picsum.photos/seed/cornersofa/400/300",   "Мебель"},
-            {"Письменный стол",        "120×60 см, МДФ, белый",                           8990, "https://picsum.photos/seed/writingdesk/400/300",  "Мебель"},
-            {"Стеллаж книжный",        "5 полок, 180×80 см, дуб сонома",                  6490, "https://picsum.photos/seed/bookshelf/400/300",    "Мебель"},
-
-            // Цветы
-            {"Букет роз 25 шт",        "Красные розы, свежие, с упаковкой",               2990, "https://picsum.photos/seed/redroses/400/300",     "Цветы"},
-            {"Орхидея в горшке",       "Фаленопсис, 2 ветки, белая",                      1490, "https://picsum.photos/seed/orcht/400/300",    "Цветы"},
-            {"Суккуленты набор 5 шт",  "Разные виды, в керамических горшках",             1290, "https://picsum.photos/seed/succulentset/400/300", "Цветы"},
-
-            // Товары для взрослых
-            {"Вино красное сухое",     "Каберне Совиньон, Чили, 0.75 л",                    890, "https://picsum.photos/seed/redwine/400/300",      "Товары для взрослых"},
-            {"Набор для покера",       "200 фишек, 2 колоды карт, кейс",                  2490, "https://picsum.photos/seed/pokerset/400/300",     "Товары для взрослых"},
-            {"Виски Jack Daniel's",    "0.7 л, Tennessee Whiskey",                         2990, "https://picsum.photos/seed/jackdaniels/400/300",  "Товары для взрослых"},
-
-            // Книги
-            {"Мастер и Маргарита",     "Булгаков М.А., твёрдая обложка",                    590, "https://picsum.photos/seed/masterbook/400/300",   "Книги"},
-            {"Атомные привычки",       "Джеймс Клир, бестселлер NYT",                       790, "https://picsum.photos/seed/atomicbook/400/300",   "Книги"},
-            {"Гарри Поттер. Бокс",     "7 книг в подарочном боксе",                        4990, "https://picsum.photos/seed/harrypotter/400/300",  "Книги"},
-
-            // Бытовая техника
-            {"Робот-пылесос Xiaomi",   "S10+, лазерная навигация, 4000 Па",              24990, "https://picsum.photos/seed/robotvac/400/300",     "Бытовая техника"},
-            {"Стиральная машина LG",   "7 кг, 1200 об/мин, инверторная",                 34990, "https://picsum.photos/seed/lgwasher/400/300",     "Бытовая техника"},
-            {"Микроволновая печь",     "23 л, гриль, 800 Вт",                             8990, "https://picsum.photos/seed/microoven/400/300",    "Бытовая техника"},
-
-            // Канцтовары
-            {"Набор маркеров Copic",   "36 цветов, профессиональные",                     4990, "https://picsum.photos/seed/copicset/400/300",     "Канцтовары"},
-            {"Ежедневник кожаный A5",  "Недатированный, 320 страниц",                     1490, "https://picsum.photos/seed/leatherplan/400/300",  "Канцтовары"},
-            {"Ручка Parker Jotter",    "Шариковая, нержавеющая сталь",                    1990, "https://picsum.photos/seed/parkerjot/400/300",    "Канцтовары"},
-
-            // Ювелирные изделия
-            {"Кольцо с бриллиантом",   "585 проба, 0.15 карат",                          24990, "https://picsum.photos/seed/diamondring/400/300",  "Ювелирные изделия"},
-            {"Серьги серебряные",      "925 проба, с фианитами",                           2490, "https://picsum.photos/seed/silverear/400/300",    "Ювелирные изделия"},
-            {"Браслет золотой",        "14К, плетение панцирь, 18 см",                   12990, "https://picsum.photos/seed/goldbrace/400/300",    "Ювелирные изделия"},
-
-            // Для ремонта
-            {"Перфоратор Bosch",       "800 Вт, SDS-plus, 3 режима",                      8990, "https://picsum.photos/seed/boschdrill/400/300",   "Для ремонта"},
-            {"Краска интерьерная",     "10 л, моющаяся, матовая, белая",                  2490, "https://picsum.photos/seed/wallpaint/400/300",    "Для ремонта"},
-            {"Набор инструментов",     "108 предметов, кейс, ключи, биты",                3990, "https://picsum.photos/seed/toolset108/400/300",   "Для ремонта"},
-
-            // Зоотовары
-            {"Корм Royal Canin 15 кг", "Для взрослых собак средних пород",                5490, "https://picsum.photos/seed/royalcanin/400/300",   "Зоотовары"},
-            {"Когтеточка для кошки",   "Напольная, сизаль, 80 см",                        1490, "https://picsum.photos/seed/catscratch/400/300",   "Зоотовары"},
-            {"Аквариум 60 л",          "С крышкой, фильтром и подсветкой",                4990, "https://picsum.photos/seed/aquarium60/400/300",   "Зоотовары"},
-        };
-
-        for (Object[] item : items) {
-            Product p = new Product();
-            p.name        = (String) item[0];
-            p.description = (String) item[1];
-            p.price       = ((Number) item[2]).doubleValue();
-            p.imageUrl    = (String) item[3];
-            p.category    = (String) item[4];
-            p.sellerId    = 0;
-            p.sellerName  = "Магазин Bulbulyator";
-            dao.insert(p);
+            return SupabaseClient.uploadBytes("products", path, bytes, "image/jpeg");
+        } catch (Exception e) {
+            Log.e(TAG, "uploadImageToStorage error for " + productName, e);
+            return null;
         }
-
-        prefs.edit().putBoolean(KEY, true).apply();
     }
 }

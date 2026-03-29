@@ -80,6 +80,10 @@ public class AddProductActivity extends BaseActivity {
 
         buildCategoryChips();
 
+        // Фон карточки под тему
+        androidx.cardview.widget.CardView card = findViewById(R.id.mainCard);
+        card.setCardBackgroundColor(ThemeManager.getCardBg(this));
+
         addCategoryButton.setOnClickListener(v -> {
             String custom = customCategoryInput.getText().toString().trim();
             if (custom.isEmpty()) { Toast.makeText(this, "Введите название категории", Toast.LENGTH_SHORT).show(); return; }
@@ -95,17 +99,40 @@ public class AddProductActivity extends BaseActivity {
     }
 
     @Override
-    protected void onResume() { super.onResume(); applyTheme(); }
+    protected void onResume() {
+        super.onResume();
+        applyTheme();
+        androidx.cardview.widget.CardView card = findViewById(R.id.mainCard);
+        card.setCardBackgroundColor(ThemeManager.getCardBg(this));
+    }
 
     private Chip makeChip(String text, boolean checkable, boolean checked) {
         Chip chip = new Chip(this);
-        chip.setText(text); chip.setCheckable(checkable); chip.setChecked(checked);
-        chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(ThemeManager.getChipBg(this)));
-        chip.setTextColor(android.content.res.ColorStateList.valueOf(ThemeManager.getChipText(this)));
-        chip.setChipStrokeWidth(1f);
-        chip.setChipStrokeColor(android.content.res.ColorStateList.valueOf(ThemeManager.getChipStroke(this)));
-        chip.setCheckedIconTint(android.content.res.ColorStateList.valueOf(ThemeManager.getGold()));
+        chip.setText(text);
+        chip.setCheckable(checkable);
+        chip.setChecked(checked);
+
+        // Фон: жёлтый когда выбран, обычный когда нет
+        int[][] bgStates = { new int[]{ android.R.attr.state_checked }, new int[]{} };
+        int[] bgColors   = { 0xFFFFD700, ThemeManager.getChipBg(this) };
+        chip.setChipBackgroundColor(new android.content.res.ColorStateList(bgStates, bgColors));
+
+        // Текст: чёрный когда выбран (на жёлтом), обычный когда нет
+        int[][] textStates = { new int[]{ android.R.attr.state_checked }, new int[]{} };
+        int[] textColors   = { 0xFF1A1A1A, ThemeManager.getChipText(this) };
+        chip.setTextColor(new android.content.res.ColorStateList(textStates, textColors));
+
+        // Обводка: жёлтая когда выбран
+        int[][] strokeStates = { new int[]{ android.R.attr.state_checked }, new int[]{} };
+        int[] strokeColors   = { 0xFFFFD700, ThemeManager.getChipStroke(this) };
+        chip.setChipStrokeWidth(1.5f);
+        chip.setChipStrokeColor(new android.content.res.ColorStateList(strokeStates, strokeColors));
+
+        chip.setCheckedIconVisible(false); // убираем галочку, цвет и так говорит о выборе
         chip.setRippleColor(android.content.res.ColorStateList.valueOf(0x33FFD700));
+        // убираем surface overlay который Material3 подмешивает поверх фона чипа
+        chip.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+        //chip.setSurfaceColor(android.content.res.ColorStateList.valueOf(android.graphics.Color.TRANSPARENT));
         return chip;
     }
 
@@ -172,18 +199,48 @@ public class AddProductActivity extends BaseActivity {
         try { price = Double.parseDouble(priceStr); }
         catch (NumberFormatException e) { Toast.makeText(this, "Неверный формат цены", Toast.LENGTH_SHORT).show(); return; }
 
-        Product product = new Product();
-        product.name        = name;
-        product.description = description;
-        product.price       = price;
-        product.imageUrl    = selectedImageUri.toString();
-        product.category    = selectedCategory;
-        product.sellerId    = prefs.getInt("userId", -1);
-        product.sellerName  = prefs.getString("userName", "Продавец");
+        addButton.setEnabled(false);
+        Toast.makeText(this, "Загрузка изображения...", Toast.LENGTH_SHORT).show();
+
+        int sellerId   = prefs.getInt("userId", -1);
+        String sellerName = prefs.getString("userName", "Продавец");
+        double finalPrice = price;
 
         new Thread(() -> {
+            // Определяем MIME-тип
+            String mime = "image/jpeg";
+            try {
+                String type = getContentResolver().getType(selectedImageUri);
+                if (type != null) mime = type;
+            } catch (Exception ignored) {}
+
+            String ext = mime.contains("png") ? "png" : "jpg";
+            String path = "products/" + sellerId + "_" + System.currentTimeMillis() + "." + ext;
+            String uploadedUrl = SupabaseClient.uploadFile("products", path, this, selectedImageUri, mime);
+
+            if (uploadedUrl == null) {
+                runOnUiThread(() -> {
+                    addButton.setEnabled(true);
+                    Toast.makeText(this, "Ошибка загрузки изображения", Toast.LENGTH_SHORT).show();
+                });
+                return;
+            }
+
+            Product product = new Product();
+            product.name        = name;
+            product.description = description;
+            product.price       = finalPrice;
+            product.imageUrl    = uploadedUrl;
+            product.category    = selectedCategory;
+            product.sellerId    = sellerId;
+            product.sellerName  = sellerName;
+
             db.productDao().insert(product);
-            runOnUiThread(() -> { Toast.makeText(this, "Товар успешно размещён!", Toast.LENGTH_SHORT).show(); finish(); });
+            runOnUiThread(() -> {
+                addButton.setEnabled(true);
+                Toast.makeText(this, "Товар успешно размещён!", Toast.LENGTH_SHORT).show();
+                finish();
+            });
         }).start();
     }
 }

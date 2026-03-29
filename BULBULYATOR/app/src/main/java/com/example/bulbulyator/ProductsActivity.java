@@ -1,5 +1,6 @@
 package com.example.bulbulyator;
 
+import android.animation.ValueAnimator;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -8,9 +9,11 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -35,11 +38,14 @@ public class ProductsActivity extends BaseActivity {
     private View emptyView;
     private EditText searchInput;
     private ChipGroup chipGroup, customCatsGroup;
+    private LinearLayout categoryToggle, categoryChipsContainer;
+    private TextView categoryToggleArrow;
     private SupabaseDb db;
     private SharedPreferences prefs;
     private int userId;
     private String currentCategory = null;
     private boolean customCatsExpanded = false;
+    private boolean categoriesExpanded = false;
 
     private static final List<String> STANDARD_CATS = Arrays.asList(
             "Электроника", "Автотовары", "Услуги", "Игры", "Одежда",
@@ -65,6 +71,11 @@ public class ProductsActivity extends BaseActivity {
         searchInput     = findViewById(R.id.searchInput);
         chipGroup       = findViewById(R.id.chipGroup);
         customCatsGroup = findViewById(R.id.customCatsGroup);
+        categoryToggle         = findViewById(R.id.categoryToggle);
+        categoryChipsContainer = findViewById(R.id.categoryChipsContainer);
+        categoryToggleArrow    = findViewById(R.id.categoryToggleArrow);
+
+        categoryToggle.setOnClickListener(v -> toggleCategories());
 
         searchInput.addTextChangedListener(new TextWatcher() {
             public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
@@ -89,13 +100,80 @@ public class ProductsActivity extends BaseActivity {
         chip.setText(text);
         chip.setCheckable(checkable);
         chip.setChecked(checked);
-        chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(ThemeManager.getChipBg(this)));
-        chip.setTextColor(android.content.res.ColorStateList.valueOf(ThemeManager.getChipText(this)));
-        chip.setChipStrokeWidth(1f);
-        chip.setChipStrokeColor(android.content.res.ColorStateList.valueOf(ThemeManager.getChipStroke(this)));
-        chip.setCheckedIconTint(android.content.res.ColorStateList.valueOf(ThemeManager.getGold()));
+
+        int[][] bgStates   = { new int[]{ android.R.attr.state_checked }, new int[]{} };
+        int[] bgColors     = { 0xFFFFD700, ThemeManager.getChipBg(this) };
+        chip.setChipBackgroundColor(new android.content.res.ColorStateList(bgStates, bgColors));
+
+        int[][] textStates = { new int[]{ android.R.attr.state_checked }, new int[]{} };
+        int[] textColors   = { 0xFF1A1A1A, ThemeManager.getChipText(this) };
+        chip.setTextColor(new android.content.res.ColorStateList(textStates, textColors));
+
+        int[][] strokeStates = { new int[]{ android.R.attr.state_checked }, new int[]{} };
+        int[] strokeColors   = { 0xFFFFD700, ThemeManager.getChipStroke(this) };
+        chip.setChipStrokeWidth(1.5f);
+        chip.setChipStrokeColor(new android.content.res.ColorStateList(strokeStates, strokeColors));
+
+        chip.setCheckedIconVisible(false);
         chip.setRippleColor(android.content.res.ColorStateList.valueOf(0x33FFD700));
         return chip;
+    }
+
+    private void toggleCategories() {
+        if (categoriesExpanded) {
+            // Сворачиваем с анимацией
+            int fromHeight = categoryChipsContainer.getMeasuredHeight();
+            ValueAnimator anim = ValueAnimator.ofInt(fromHeight, 0);
+            anim.setDuration(250);
+            anim.setInterpolator(new DecelerateInterpolator());
+            anim.addUpdateListener(a -> {
+                int val = (int) a.getAnimatedValue();
+                ViewGroup.LayoutParams lp = categoryChipsContainer.getLayoutParams();
+                lp.height = val;
+                categoryChipsContainer.setLayoutParams(lp);
+            });
+            anim.addListener(new android.animation.AnimatorListenerAdapter() {
+                @Override public void onAnimationEnd(android.animation.Animator animation) {
+                    categoryChipsContainer.setVisibility(View.GONE);
+                    ViewGroup.LayoutParams lp = categoryChipsContainer.getLayoutParams();
+                    lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                    categoryChipsContainer.setLayoutParams(lp);
+                }
+            });
+            anim.start();
+            categoryToggleArrow.setText("▼");
+            categoryToggleArrow.animate().rotation(0f).setDuration(250).start();
+        } else {
+            // Разворачиваем с анимацией
+            categoryChipsContainer.setVisibility(View.VISIBLE);
+            categoryChipsContainer.measure(
+                    View.MeasureSpec.makeMeasureSpec(categoryChipsContainer.getWidth(), View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+            );
+            int targetHeight = categoryChipsContainer.getMeasuredHeight();
+            ViewGroup.LayoutParams lp = categoryChipsContainer.getLayoutParams();
+            lp.height = 0;
+            categoryChipsContainer.setLayoutParams(lp);
+
+            ValueAnimator anim = ValueAnimator.ofInt(0, targetHeight);
+            anim.setDuration(250);
+            anim.setInterpolator(new DecelerateInterpolator());
+            anim.addUpdateListener(a -> {
+                ViewGroup.LayoutParams lp2 = categoryChipsContainer.getLayoutParams();
+                lp2.height = (int) a.getAnimatedValue();
+                categoryChipsContainer.setLayoutParams(lp2);
+            });
+            anim.addListener(new android.animation.AnimatorListenerAdapter() {
+                @Override public void onAnimationEnd(android.animation.Animator animation) {
+                    ViewGroup.LayoutParams lp2 = categoryChipsContainer.getLayoutParams();
+                    lp2.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                    categoryChipsContainer.setLayoutParams(lp2);
+                }
+            });
+            anim.start();
+            categoryToggleArrow.animate().rotation(180f).setDuration(250).start();
+        }
+        categoriesExpanded = !categoriesExpanded;
     }
 
     private void buildCategoryChips() {

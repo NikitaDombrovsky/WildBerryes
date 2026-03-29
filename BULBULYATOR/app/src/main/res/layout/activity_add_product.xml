@@ -38,7 +38,8 @@
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="#121212">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -47,10 +48,12 @@
             android:padding="15dp">
 
             <androidx.cardview.widget.CardView
+                android:id="@+id/mainCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="10dp"
-                app:cardElevation="2dp">
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="#1E1E1E">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -160,13 +163,23 @@
                         android:textColor="#AAAAAA"
                         android:layout_marginBottom="8dp" />
 
+
                     <com.google.android.material.chip.ChipGroup
                         android:id="@+id/categoryChipGroup"
-                        android:layout_width="match_parent"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        app:singleSelection="true"
-                        app:selectionRequired="false" />
+                        android:backgroundTint="#1E1E1E"
+                        android:theme="@style/Theme.BULBULYATOR.Dark"
+                        app:selectionRequired="false"
+                        app:singleSelection="true" />
+                    <!--                    <com.google.android.material.chip.ChipGroup-->
+
+<!--                        android:id="@+id/categoryChipGroup"-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:layout_marginBottom="10dp"-->
+<!--                        app:selectionRequired="false"-->
+<!--                        app:singleSelection="true" />-->
 
                     <!-- Поле своей категории — появляется только при выборе "Другое" -->
                     <LinearLayout

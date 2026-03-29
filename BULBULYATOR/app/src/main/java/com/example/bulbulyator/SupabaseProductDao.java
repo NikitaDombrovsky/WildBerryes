@@ -15,10 +15,10 @@ public class SupabaseProductDao {
             p.name        = o.optString("name", "");
             p.description = o.optString("description", "");
             p.price       = o.optDouble("price", 0);
-            p.imageUrl    = o.optString("image_url", "");
-            p.category    = o.optString("category", "");
+            p.imageUrl    = o.isNull("image_url") ? "" : o.optString("image_url", "");
+            p.category    = o.isNull("category") ? "" : o.optString("category", "");
             p.sellerId    = o.optInt("seller_id", 0);
-            p.sellerName  = o.optString("seller_name", "");
+            p.sellerName  = o.isNull("seller_name") ? "" : o.optString("seller_name", "");
             return p;
         } catch (Exception e) { return null; }
     }
@@ -45,9 +45,15 @@ public class SupabaseProductDao {
     }
 
     public List<Product> search(String query) {
-        // Supabase ilike для поиска
-        String q = "or=(name.ilike.*" + query + "*,description.ilike.*" + query + "*)";
-        return toList(SupabaseClient.get("products1", q));
+        try {
+            String safeQuery = java.net.URLEncoder.encode(query, "UTF-8").replace("+", "%20");
+            String pattern = "*" + safeQuery + "*";
+            String orParam = java.net.URLEncoder.encode(
+                    "(name.ilike." + pattern + ",description.ilike." + pattern + ")", "UTF-8");
+            return toList(SupabaseClient.get("products1", "or=" + orParam));
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
     }
 
     public List<Product> getByCategory(String category) {

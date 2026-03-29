@@ -7,6 +7,7 @@
     android:orientation="vertical"
     android:background="#121212">
 
+    <!-- Топбар -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -36,11 +37,15 @@
             android:layout_marginStart="10dp" />
     </LinearLayout>
 
+    <!-- Поиск -->
     <EditText
         android:id="@+id/searchInput"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="10dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="4dp"
         android:background="#1E1E1E"
         android:hint="Поиск товаров..."
         android:padding="12dp"
@@ -48,28 +53,88 @@
         android:inputType="text"
         android:imeOptions="actionSearch" />
 
-    <com.google.android.material.chip.ChipGroup
-        android:id="@+id/chipGroup"
+    <!-- Коллапсируемый блок категорий -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingStart="10dp"
-        android:paddingEnd="10dp"
-        app:singleSelection="true"
-        app:selectionRequired="true" />
+        android:orientation="vertical"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="6dp"
+        android:background="@drawable/category_block_bg"
+        android:elevation="2dp">
 
-    <!-- Раскрывающийся блок пользовательских категорий -->
-    <com.google.android.material.chip.ChipGroup
-        android:id="@+id/customCatsGroup"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingStart="24dp"
-        android:paddingEnd="10dp"
-        android:paddingBottom="4dp"
-        android:background="#121212"
-        android:visibility="gone"
-        app:singleSelection="true"
-        app:selectionRequired="false" />
+        <!-- Заголовок-кнопка -->
+        <LinearLayout
+            android:id="@+id/categoryToggle"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground">
 
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Категории"
+                android:textColor="#FFD700"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.05" />
+
+            <TextView
+                android:id="@+id/categoryToggleArrow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="&#9660;"
+                android:textColor="#FFD700"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <!-- Чипы — скрыты по умолчанию -->
+        <LinearLayout
+            android:id="@+id/categoryChipsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#2A2A2A" />
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:paddingTop="4dp"
+                app:singleSelection="true"
+                app:selectionRequired="true" />
+
+            <!-- Раскрывающийся блок пользовательских категорий -->
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/customCatsGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="24dp"
+                android:paddingEnd="10dp"
+                android:paddingBottom="8dp"
+                android:visibility="gone"
+                app:singleSelection="true"
+                app:selectionRequired="false" />
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Пусто -->
     <LinearLayout
         android:id="@+id/emptyView"
         android:layout_width="match_parent"

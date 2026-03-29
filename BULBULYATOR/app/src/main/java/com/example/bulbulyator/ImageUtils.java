@@ -8,7 +8,7 @@ import com.bumptech.glide.Glide;
 
 public class ImageUtils {
     public static void load(Context ctx, String url, ImageView into) {
-        if (url == null || url.isEmpty()) {
+        if (url == null || url.isEmpty() || url.equals("null")) {
             into.setImageResource(R.drawable.ic_launcher_background);
             return;
         }
